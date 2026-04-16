@@ -1,5 +1,5 @@
-<h1>Laravel 13 and Pest unit test, <br/>
-Vite 8.0.0 + React 19.2.5 and MySQL Backend Starter Project</h1>
+<h3>Laravel 13 and Pest unit test, <br/>
+Vite 8.0.0 + React 19.2.5 and MySQL Backend Starter Project</h3>
 <p>
 <h5>Dependencies</h5>
 <p>1. node 23.5.0</p>
