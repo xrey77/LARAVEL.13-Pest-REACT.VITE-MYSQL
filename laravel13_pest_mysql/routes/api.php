@@ -11,7 +11,7 @@ use App\Http\Controllers\MfavalidationController;
 use App\Http\Controllers\ChangepasswordController;
 use App\Http\Controllers\DeleteuserController;
 use App\Http\Controllers\ActivatemfaController;
-
+use App\Http\Controllers\UpdateprofileController;
 use App\Http\Controllers\AddproductController;
 use App\Http\Controllers\ProductlistController;
 use App\Http\Controllers\ProductsearchController;
@@ -24,18 +24,20 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/register', [RegisterController::class, 'register']);
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'loginuser']);
 Route::get('/getuserid/{id}', [GetuseridController::class, 'getUserbydid']);
 Route::get('/getallusers', [GetusersController::class, 'getAllusers']);
 Route::post('/uploadpicture/{id}', [UploadpictureController::class, 'updateProfilepicture']);
-Route::patch('/otpvalidation/{id}', [MfavalidationController::class, 'validateOtp']);
-Route::patch('/changepassword/{id}', [ChangepasswordController::class, 'changePassword']);
+Route::patch('/mfa/verifytotp/{id}', [MfavalidationController::class, 'validateOtp']);
+Route::patch('/changepassword/{id}', [ChangepasswordController::class, 'changeUserpassword']);
 Route::patch('/activatemfa/{id}', [ActivatemfaController::class, 'enableMfa']);
+Route::patch('/profileupdate/{id}', [UpdateprofileController::class, 'updateUser']);
+
 Route::delete('/deleteuser/{id}', [DeleteuserController::class, 'deleteUser']);
 
 Route::post('/addproduct', [AddproductController::class, 'addProduct']);
 Route::get('/productlist/{page}', [ProductlistController::class, 'listProducts']);
-Route::get('/productsearch/{key}', [ProductsearchController::class, 'productSearch']);
+Route::get('/productsearch/{page}/{key}', [ProductsearchController::class, 'productSearch']);
 
 Route::get('/chartdata', [ChartController::class, 'generateChart']);
 Route::get('/pdfreport', [PdfController::class, 'generatePdf']);

@@ -35,6 +35,17 @@ return [
             'driver' => 'sync',
         ],
 
+        'kafka' => [
+            'driver' => 'kafka',
+            'queue' => env('KAFKA_QUEUE', 'default'),
+            'bootstrap_servers' => env('KAFKA_BROKERS', 'localhost:9092'),
+            'group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'laravel_queue'),
+            'sasl_username' => env('KAFKA_SASL_USERNAME'),
+            'sasl_password' => env('KAFKA_SASL_PASSWORD'),
+            'sasl_mechanism' => 'PLAIN',
+            'security_protocol' => 'SASL_SSL',
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),

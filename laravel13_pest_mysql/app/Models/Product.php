@@ -5,13 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Model;
-
 use OpenApi\Attributes as OA;
+
 
 #[OA\Schema(
     schema: 'Product',
-    title: 'Product',
-    description: 'Product model schema',
+    title: "Product Model",
+    description: "Product data structure",
+    type: 'object',
+    items: new OA\Items(
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
         new OA\Property(property: 'category', type: 'string', example: 'Electronics'),
@@ -24,9 +26,10 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'productpicture', type: 'string', example: 'laptop.jpg'),
         new OA\Property(property: 'alertstocks', type: 'integer', example: 5),
         new OA\Property(property: 'criticalstocks', type: 'integer', example: 2),
-        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'createdat', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updatedat', type: 'string', format: 'date-time'),
     ]
+    )
 )]
 class Product extends Model
 {

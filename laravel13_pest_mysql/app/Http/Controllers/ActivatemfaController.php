@@ -2,65 +2,87 @@
 
 namespace App\Http\Controllers;
 
+use Symfony\Component\Console\Output\ConsoleOutput;
+
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Google2FA;
+use PragmaRX\Google2FA\Google2FA; 
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
+
 use Exception;
-use Image;
+use App\Services\KafkaProducerService;
+use OpenApi\Attributes as OA;
 
 class ActivatemfaController extends Controller
 {
-    public function enableMfa($id, Request $request) {
+    #[OA\Patch(
+        path: '/api/mfa/activate/{id}',
+        tags: ["Authentication"],
+        summary: 'Enable/Disable MFA',
+        security: [['sanctum' => []]], 
+        )]
+    #[OA\RequestBody(content: new OA\JsonContent(properties: [new OA\Property(property: 'Twofactorenabled', type: 'boolean', example: true)]))]
+    #[OA\Response(
+        response: 200, 
+        description: 'MFA Status Updated',
+        content: new OA\JsonContent(properties: [
+            new OA\Property(property: 'message', type: 'string'),
+            new OA\Property(property: 'qrcodeurl', type: 'string', nullable: true)
+        ])
+    )]
+    public function enableMfa(Request $request, KafkaProducerService $kafkaService, ?int $id) {
         if (Auth::guard('sanctum')->check()) {
+
             $user = User::find($id);
             if (!$user) {
                 return response()->json(['message' => 'User not found...'],404);
             }
-            $isEnabled = $request->Twofactorenabled;
-            if ($isEnabled) {
 
+            if ($request->Twofactorenabled) {
                 $issuer = config('services.issuer_service.key');
                 $google2fa = new Google2FA();
                 $secretKey = $google2fa->generateSecretKey();
-                // Log::Debug("SECRET KEY :", encrypt($secretKey));
-                $userEmail = $user->email;
-                $companyName = $issuer;
                 $qrCodeUrl = $google2fa->getQRCodeUrl(
-                    $companyName,
-                    $userEmail,
+                    $issuer,
+                    $user->email,
                     $secretKey
                 );
-        
-                // Configure the PNG renderer for BaconQrCode
+
                 $renderer = new ImageRenderer(
-                    new RendererStyle(400), // Set the size
+                    new RendererStyle(200),
                     new ImagickImageBackEnd()
                 );
                 $writer = new Writer($renderer);
                 
-                // Write the QR code as a PNG image string
-                $qrcode_image_string = $writer->writeString($qrCodeUrl);
-        
-                // Encode the image string to base64 for embedding in the view
+                $qrcode_image_string = $writer->writeString($qrCodeUrl);        
                 $qrcode_base64 = base64_encode($qrcode_image_string);
+                $qrcode = 'data:image/png;base64,' . $qrcode_base64;
 
-                $qrcode = 'data:image/svg+xml;base64,' . $qrcode_base64;
-                $user->google2fa_secret = encrypt($secretKey);
+                // $out = new ConsoleOutput();
+                // $out->writeln($qrcode);
+
+                // $user->google2fa_secret = encrypt($secretKey);
+                $user->secretkey = encrypt($secretKey);
                 $user->qrcodeurl = $qrcode;
                 $user->save();
-                return response()->json(['message' => 'Multi-Factor Authenticator Enabled successfully, please scan QRCODE using your Google Authenticator from your Mobile Phone!', 'qrcodeurl' => $qrcode],200);
+                $data = [
+                    'event' => 'activate_mfa',
+                    'user_id' => $user->id
+                ];
+
+                $kafkaService->publishMessage('central-topic', $data, $user);
+                return response()->json(['message' => 'Multi-Factor Authenticator has been Enabled successfully, please scan QRCODE using your Google Authenticator from your Mobile Phone!', 'qrcodeurl' => $qrcode],200);
             } else {
+                $user->secretkey = null;
                 $user->qrcodeurl = null;
                 $user->save();
-                return response()->json(['message' => 'Multi-Factor Authenticator Disabled successfully.', 'qrcodeurl' => null],200);
+                return response()->json(['message' => 'Multi-Factor Authenticator has been Disabled successfully.', 'qrcodeurl' => null],200);
             }
 
         } else {

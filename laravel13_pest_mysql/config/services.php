@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'api_service' => [
+        'key' => env('JWT_SECRET'),
+    ],
+    'issuer_service' => [
+        'key' => env('ISSUER_NAME'),
+    ],
 ];

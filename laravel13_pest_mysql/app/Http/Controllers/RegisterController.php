@@ -6,11 +6,58 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Services\KafkaProducerService;
+use OpenApi\Attributes as OA;
 
 class RegisterController extends Controller
 {
 
-    public function register(Request $request) 
+    #[OA\Post(
+        path: "/api/register",
+        tags: ["Authentication"],
+        summary: "Register a new user",
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["email", "username", "password"],
+                properties: [
+                    new OA\Property(property: "firstname", type: "string", example: "John"),
+                    new OA\Property(property: "lastname", type: "string", example: "Doe"),
+                    new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
+                    new OA\Property(property: "mobile", type: "string", example: "1234567890"),
+                    new OA\Property(property: "username", type: "string", example: "johndoe"),
+                    new OA\Property(property: "password", type: "string", format: "password", example: "Secret123")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "User registered successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "User registered successfully."),
+                        new OA\Property(property: "firstname", type: "string"),
+                        new OA\Property(property: "lastname", type: "string"),
+                        new OA\Property(property: "email", type: "string"),
+                        new OA\Property(property: "mobile", type: "string"),
+                        new OA\Property(property: "username", type: "string"),
+                        new OA\Property(property: "password", type: "string")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: "Bad Request - Email or Username already taken",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Email Address is already taken.")
+                    ]
+                )
+            )
+        ]
+    )]    
+    public function register(Request $request, KafkaProducerService $kafkaService) 
     {
 
         $validated = $request->validate([
@@ -61,14 +108,16 @@ class RegisterController extends Controller
             $user->save();                    
         }
         
+        $data = [
+            'event' => 'user_register',
+            'id' => $user->id,
+            'username' => $user->username
+        ];
+
+        $kafkaService->publishMessage('central-topic', $data, $user);
+
         return response()->json([
-            'message' => 'User registered successfully.',
-            'firstname' => $firstname,
-            'lastname' => $lastname,
-            'email'=> $email,
-            'mobile' => $mobile,
-            'username' => $username,
-            'password' => $password],201);
+            'message' => 'User registered successfully.'],201);
     }
 
 
