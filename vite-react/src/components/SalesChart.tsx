@@ -25,7 +25,7 @@ ChartJS.register(
 );
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json'}
 })
@@ -50,12 +50,10 @@ const logoPlugin = {
   }
 };
 
-
 interface SalesData {
-  date: string;
-  amount: number;
+  salesdate: string;
+  salesamount: number;
 }
-
 
 export default function SalesChart() {
   const [message, setMessage] = useState<string>('');
@@ -100,19 +98,15 @@ const options: ChartOptions<'bar'> = {
   });
 
   const barChart = async () => {
-    const chartQuery = {
-      query: `query { showChart { amount date } }`,
-    };
 
-    try {
-      const res = await api.post('', chartQuery);
-      const result = res.data.data?.showChart; 
-      
+    try {      
+      const res = await api.get("/api/chartdata"); 
+      const result = res.data; 
       if (result) {
         const labels = result.map((item: SalesData) => 
-          new Date(item.date).toLocaleString('en-US', { month: 'short' })
+          new Date(item.salesdate).toLocaleString('en-US', { month: 'short' })
         );
-        const data = result.map((item: SalesData) => item.amount);
+        const data = result.map((item: SalesData) => item.salesamount);
 
         setChartData({
           labels,

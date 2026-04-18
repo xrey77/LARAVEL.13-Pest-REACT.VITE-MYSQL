@@ -3,10 +3,26 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json'}
 })
+
+interface Productdata {
+  totalrecords: number,
+  totpage: number,
+  page: number,
+  products: Products[]
+}
+
+interface Products {
+  id: number,
+  descriptions: string  
+  qty: number,
+  unit: string,
+  sellprice: number,
+  productpicture: string
+}
 
 const toDecimal = (number: any) => {
   const formatter = new Intl.NumberFormat('en-US', {
@@ -15,48 +31,32 @@ const toDecimal = (number: any) => {
   });
   return formatter.format(number);
 };
+
 export default function Prodcatalog() {
-    let [page, setPage] = useState<number>(1);
-    let [prods, setProds] = useState<[]>([]);
-    let [totpage, setTotpage] = useState<number>(0);
-    const [message, setMessage] = useState('');
 
-    const fetchCatalog = async (pg: any) => {
-        const catalogQuery = {
-            query: `
-                query ListProducts($page: Int!) {
-                    getAllproducts(page: $page) {
-                        products {
-                            id
-                            category
-                            descriptions
-                            qty
-                            unit
-                            sellprice
-                            productpicture
-                        }
-                        page
-                        totpage
-                        totalrecords
-                    }
-                }
-            `,
-            variables: { page: pg }
-        };
+    const [page, setPage] = useState<number>(1);
+    const [totpage, setTotpage] = useState<number>(0);
+    const [totalrecs, setTotalrecs] = useState<number>(0);
+    const [message, setMessage] = useState<string>('');
 
-        try {
-            const res = await api.post('', catalogQuery);
-            const result = res.data.data?.getAllproducts; 
-            
-            if (result) {
-                setProds(result.products);
-                // setTotalrecs(result.totalrecords);
-                setTotpage(result.totpage);
-            }
-        } catch (error: any) {
+    const [products, setProducts] = useState<Products[]>([]);
+
+      const fetchCatalog = async (pg: any) => {
+        await api.get<Productdata>(`/api/productlist/${pg}`)
+        .then((res: any) => {
+          const data: Productdata = res.data;
+          setProducts(data.products);
+          setTotpage(data.totpage);
+          setTotalrecs(data.totalrecords)
+          setPage(data.page);
+        }, (error: any) => {
+          if (error.response) {
+            setMessage(error.response.data.message)
+          } else {
             setMessage(error.message);
-        }
-    }
+          }
+        });            
+      }
 
     useEffect(() => {
       fetchCatalog(page)
@@ -91,11 +91,11 @@ export default function Prodcatalog() {
             <h3 className="text-warning embossed mt-3">Products Catalog</h3>
             <div className="text-warning">{message}</div>
             <div className="card-group mb-3">
-            {prods.map((item) => {
+            {products.map((item) => {
                     return (
                       <div className='col-md-4'>
                       <div key={item['id']} className="card mx-3 mt-3">
-                          <img src={`http://localhost:3000/products/${item['productpicture']}`} className="card-img-top product-size" alt=""/>
+                          <img src={`http://127.0.0.1:8000/products/${item['productpicture']}`} className="card-img-top product-size" alt=""/>
                           <div className="card-body">
                             <h5 className="card-title">Descriptions</h5>
                             <p className="card-text desc-h">{item['descriptions']}</p>
@@ -121,6 +121,7 @@ export default function Prodcatalog() {
           <li className="page-item page-link text-danger sm">Page&nbsp;{page} of&nbsp;{totpage}</li>
         </ul>
       </nav>
+      <div className="text-white">TOTAL RECORDS : {totalrecs}</div>
       <br/><br/>
       </div>
   </div>

@@ -4,7 +4,7 @@ import axios from 'axios';
 import jQuery from "jquery";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json'}
 })
@@ -19,49 +19,46 @@ export default function Login() {
     event.preventDefault();
     setMessage('Please wait...');
     setIsDisabled(true);
-
-    const loginQuery = {
-      query: `
-        mutation userLogin($username: String!, $password: String!) {
-          signinUser(username: $username, password: $password) {
-            token
-            user {
-              id firstname lastname email mobile username isactivated, isblocked userpic qrcodeurl
+    setMessage('please wait...');
+    const data =JSON.stringify({ username: username, password: password });
+    api.post("/api/login", data)
+    .then((res: any) => {
+            setMessage(res.data.message);
+            let userpic: string = `http://127.0.0.1:8000/users/${res.data.profilepic}`;
+            if (res.data.qrcodeurl !== null) {
+                window.sessionStorage.setItem('USERID',res.data.id);
+                window.sessionStorage.setItem('TOKEN',res.data.token);
+                window.sessionStorage.setItem('ROLE',res.data.roles);
+                window.sessionStorage.setItem('USERPIC', userpic);
+                setTimeout(() => {
+                  jQuery("#loginReset").trigger('click');
+                  jQuery("#mfaModal").trigger('click');
+                  setMessage('');
+                  setIsDisabled(false);
+                }, 3000);
+            } else {
+                window.sessionStorage.setItem('USERID',res.data.id);
+                window.sessionStorage.setItem('USERNAME',res.data.username);
+                window.sessionStorage.setItem('TOKEN',res.data.token);                        
+                window.sessionStorage.setItem('ROLE',res.data.roles);
+                window.sessionStorage.setItem('USERPIC', userpic);
+                setTimeout(() => {
+                  jQuery("#loginReset").trigger('click');
+                  window.location.reload();
+                }, 3000);    
             }
-          }
-        }
-      `,
-      variables: { username, password }
-    };
-
-    try {
-
-      const res = await api.post('', loginQuery);
-      const result = res.data.data?.signinUser;
-      const userData = result?.user;
-      const token = result?.token;
-      
-      if (!userData) {
-        throw new Error(res.data.errors?.[0]?.message || "Login failed");
-      }
-
-      window.sessionStorage.setItem('USERID', userData.id);
-      window.sessionStorage.setItem("USERNAME", userData.username)
-      let userpic: string = `http://localhost:3000/users/${userData.userpic}`;
-      window.sessionStorage.setItem("USERPIC", userpic);
-      window.sessionStorage.setItem('TOKEN', token);
-
-      if (userData.qrcodeurl) {
-        jQuery("#mfaModal").trigger('click');
-      } else {
-        location.reload();
-      }
-    } catch (error: any) {
-      setMessage(error.message || "An error occurred");
-      setTimeout(() => setMessage(''), 3000);
-    } finally {
-      setIsDisabled(false);
-    }
+      }, (error: any) => {
+            if (error.response) {
+              setMessage(error.response.data.message);
+            } else {
+              setMessage(error.message);
+            }
+            setTimeout(() => {
+              setMessage('');
+              setIsDisabled(false);
+            }, 3000);
+            return;
+    });
   };
 
   const closeLogin = (event: any) => {
@@ -79,7 +76,7 @@ export default function Login() {
     <div className="modal-content">
       <div className="modal-header bg-violet">
         <h1 className="modal-title text-white fs-5" id="staticLoginLabel">User's Login</h1>
-        <button onClick={closeLogin} type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button onClick={closeLogin} type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div className="modal-body">
         <form onSubmit={submitLogin} autoComplete="off">

@@ -262,7 +262,7 @@
                 ],
                 "summary": "User Login",
                 "description": "Authenticates user and returns a plain text token.",
-                "operationId": "c5e838284c7f343f0e5e5fd589161c96",
+                "operationId": "55b146143654e6ad7eff161d7d2fea8c",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -341,12 +341,12 @@
             }
         },
         "/api/mfa/verifytotp/{id}": {
-            "post": {
+            "patch": {
                 "tags": [
-                    "Users"
+                    "Authentication"
                 ],
                 "summary": "Validate OTP code",
-                "operationId": "490739c0d050774d6bec8b62f7e5da3e",
+                "operationId": "c4a11489937c3de1b103b6f779f04e70",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -594,13 +594,13 @@
                 }
             }
         },
-        "/api/profileupdate/{id}": {
+        "/api/updateprofile/{id}": {
             "patch": {
                 "tags": [
                     "Users"
                 ],
                 "summary": "Update user details",
-                "operationId": "b94a8edf787a8c433eecbfb70897c407",
+                "operationId": "9205787a47fe8685c3d04ddc4212dc97",
                 "parameters": [
                     {
                         "name": "id",

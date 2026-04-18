@@ -1,8 +1,25 @@
 import axios from 'axios';
 import { useState } from 'react';
 
+interface Productdata {
+  totalrecords: number,
+  totpage: number,
+  page: number,
+  products: Products[]
+}
+
+interface Products {
+  id: number,
+  descriptions: string  
+  qty: number,
+  unit: string,
+  sellprice: number,
+  productpicture: string
+}
+
+
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json'}
 })
@@ -16,74 +33,71 @@ const toDecimal = (number: any) => {
 };
 
 export default function Prodsearch() {
-  const [prodsearch, setProdsearch] = useState<[]>([]);
-  const [message, setMessage] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [totpage, setTotpage] = useState<number>(0);
   const [searchkey, setSearchkey] = useState<string>('');
-  const [totalrecs, setTotalrecs] = useState<number>(0);
+    const [page, setPage] = useState<number>(1);
+    const [totpage, setTotpage] = useState<number>(0);
+    const [totalrecs, setTotalrecs] = useState<number>(0);
+    const [message, setMessage] = useState<string>('');
+    const [products, setProducts] = useState<Products[]>([]);
 
 
   const getProdsearch = async (event: any) => {
       event.preventDefault();
       setMessage("please wait .");
-      getProdPage(page);
+      api.get<Productdata>(`/api/productsearch/${page}/${searchkey}`)
+      .then((res: any) => {
+          const data: Productdata = res.data;
+          setProducts(data.products);
+          setPage(data.page);
+          setTotalrecs(data.totalrecords);
+          setTotpage(data.totpage);
+          setTimeout(() => {
+            setMessage('');
+        }, 1000);
+      }, (error: any) => {
+          if (error.response) {
+            setMessage(error.response.data.message);
+          } else {
+            setMessage(error.message);            
+          }
+          setProducts([]);
+          setTotalrecs(0);
+          setTimeout(() => {
+              setMessage('');
+          }, 3000);
+          return;
+      });  
+
       setTimeout(() => {
         setMessage('');
       }, 1000);
-
   }
 
-  const getProdPage = async (page: number) => {
-    setMessage("please wait .");
-        const searchQuery = {
-            query: `
-                query SearchProducts($page: Int!, $key: String!) {
-                    findProductsByDescriptions(page: $page, key: $key) {
-                        products {
-                            id
-                            descriptions
-                            qty
-                            unit
-                            sellprice
-                            productpicture
-                        }
-                        page
-                        totpage
-                        totalrecords
-                    }
-                }
-            `,
-            variables: { page: page, key: searchkey } 
-        };
 
-        try {
-            const res = await api.post('', searchQuery);
-            const result = res.data.data?.findProductsByDescriptions; 
-            if (result) {
-                setProdsearch(result.products);
-                setTotalrecs(result.totalrecords);
-                setTotpage(result.totpage);
-
-            } else {
-
-            setTimeout(() => {
+  const getProdPage = (pg: number) => {
+      api.get(`/api/productsearch/${pg}/${searchkey}`)
+      .then((res: any) => {
+          setProducts(res.data.products);
+          setPage(res.data.page);
+          setTotalrecs(res.data.totalrecords);
+          setTotpage(res.data.totpage);
+          setTimeout(() => {
+            setMessage('');
+        }, 1000);
+      }, (error: any) => {
+          if (error.response) {
+            setMessage(error.response.data.message);
+          } else {
+            setMessage(error.message);            
+          }
+          setTimeout(() => {
               setMessage('');
-              setTotpage(0);
-              setTotalrecs(0);
-              setProdsearch([]);
-            }, 3000);
+              setProducts([]);
+          }, 3000);
+          return;
+      });  
 
-            }
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setMessage(errorMsg);
-            setTimeout(() => {
-              setMessage('');
-              setTotpage(0);
-            }, 1000);
-        }
-}
+  }
 
   const firstPage = (event: any) => {
     event.preventDefault();    
@@ -127,11 +141,11 @@ return (
       </form>
       <div className="container mb-9">
         <div className="card-group">
-      {prodsearch.map((item) => {
+      {products.map((item) => {
               return (
               <div className='col-md-4'>
               <div key={item['id']} className="card mx-3 mt-3">
-                  <img src={`http://localhost:3000/products/${item['productpicture']}`} className="card-img-top product-size" alt=""/>
+                  <img src={`http://127.0.0.1:8000/products/${item['productpicture']}`} className="card-img-top product-size" alt=""/>
                   <div className="card-body">
                     <h5 className="card-title">Descriptions</h5>
                     <p className="card-text desc-h">{item['descriptions']}</p>
@@ -146,7 +160,7 @@ return (
       })}
         </div>          
         {
-          totpage > 1 ? 
+          totalrecs > 5 ? 
             <nav aria-label="Page navigation example">
               <ul className="pagination sm mt-3">
                 <li className="page-item"><a onClick={lastPage} className="page-link sm" href="/#">Last</a></li>

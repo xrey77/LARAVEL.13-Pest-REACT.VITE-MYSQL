@@ -11,7 +11,7 @@ use App\Services\KafkaProducerService;
 class ProductsearchController extends Controller
 {
     #[OA\Get(
-        path: '/api/products/search/{key}',
+        path: '/api/productsearch/{page}/{key}',
         tags: ['Products'],
         summary: 'Search products by description',
     )]
@@ -62,7 +62,11 @@ class ProductsearchController extends Controller
             ];            
 
             $kafkaService->publishMessage('central-topic', $data, $products);
-            return response()->json(['message' => 'Searched found..', 'products' => $products],200);
+            return response()->json(['message' => 'Searched found..',
+            'page' => $page,
+            'totpage' => $totpage,
+            'totalrecords' => $totalrecords,
+            'products' => $products],200);
 
         } catch(\Exceptions $e) {
             return response()->json(['message' => $e->getMessage()],500);

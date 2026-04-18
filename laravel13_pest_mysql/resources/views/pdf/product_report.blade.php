@@ -8,8 +8,8 @@
         <th style="font-family: Helvetica;" scope="col">#</th>
         <th style="font-family: Helvetica;" scope="col">Description</th>
         <th style="font-family: Helvetica;width: 90px;text-align:center;" scope="col">Stocks</th>
-        <th style="font-family: Helvetica;" scope="col">CostPrice</th>
-        <th style="font-family: Helvetica;" scope="col">SellPrice</th>
+        <th style="font-family: Helvetica;width: 100px;" scope="col">CostPrice</th>
+        <th style="font-family: Helvetica:width: 100px;" scope="col">SellPrice</th>
       </tr>      
     </thead>
     <tbody>
@@ -18,8 +18,8 @@
                 <td style="font-family: Helvetica;">{{ $product->id}}</td>
                 <td style="font-family: Helvetica;">{{ $product->descriptions }}</td>
                 <td style="font-family: Helvetica;width: 90px;text-align:center;">{{ $product->qty }}</td>
-                <td style="font-family: Helvetica;width: 90px;">${{ number_format($product->costprice, 2) }}</td>
-                <td style="font-family: Helvetica;width: 90px;">${{ number_format($product->sellprice, 2) }}</td>
+                <td style="font-family: Helvetica:width: 100px;">${{ number_format($product->costprice, 2) }}</td>
+                <td style="font-family: Helvetica:width: 100px;">${{ number_format($product->sellprice, 2) }}</td>
             </tr>
         @endforeach
     </tbody>

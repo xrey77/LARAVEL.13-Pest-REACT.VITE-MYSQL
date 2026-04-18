@@ -28,10 +28,10 @@ Route::post('/login', [LoginController::class, 'loginuser']);
 Route::get('/getuserid/{id}', [GetuseridController::class, 'getUserbydid']);
 Route::get('/getallusers', [GetusersController::class, 'getAllusers']);
 Route::post('/uploadpicture/{id}', [UploadpictureController::class, 'updateProfilepicture']);
-Route::patch('/mfa/verifytotp/{id}', [MfavalidationController::class, 'validateOtp']);
+Route::patch('/verifytotp/{id}', [MfavalidationController::class, 'validateOtp']);
 Route::patch('/changepassword/{id}', [ChangepasswordController::class, 'changeUserpassword']);
 Route::patch('/activatemfa/{id}', [ActivatemfaController::class, 'enableMfa']);
-Route::patch('/profileupdate/{id}', [UpdateprofileController::class, 'updateUser']);
+Route::patch('/updateprofile/{id}', [UpdateprofileController::class, 'updateUser']);
 
 Route::delete('/deleteuser/{id}', [DeleteuserController::class, 'deleteUser']);
 

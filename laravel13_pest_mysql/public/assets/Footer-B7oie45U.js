@@ -1,0 +1,1 @@
+import{u as e}from"./vendor-react-BzauCf66.js";var t=e();function n(){return(0,t.jsx)(`div`,{className:`text-center text-white footer-12 mb-1 mt-1`,children:`Copyright &copy 2025,2030, All rights reserved. ®, NCR Voyx Corporation ™`})}export{n as t};

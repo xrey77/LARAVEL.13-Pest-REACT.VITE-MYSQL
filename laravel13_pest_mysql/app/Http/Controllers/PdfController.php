@@ -12,12 +12,14 @@ class PdfController extends Controller
     public function generatePdf(KafkaProducerService $kafkaService)
     {
         $products = Product::all();        
-        $pdf = Pdf::loadView('pdf.product_report', compact('products'))
-                  ->setPaper('a4', 'portrait')
-                  ->setOptions([
-                      'isPhpEnabled' => true,
-                      'isRemoteEnabled' => true 
-                  ]);
+        $pdf = Pdf::loadView('pdf.product_report', compact('products'));
+
+        // $pdf = Pdf::loadView('pdf.product_report', compact('products'))
+        //           ->setPaper('a4', 'portrait')
+        //           ->setOptions([
+        //               'isPhpEnabled' => true,
+        //               'isRemoteEnabled' => true 
+        //           ]);
 
         $data = [
             'event' => 'pdf_report',
@@ -25,11 +27,12 @@ class PdfController extends Controller
         ];
 
         $kafkaService->publishMessage('central-topic', $data, $products);
+        return $pdf->stream('product_report.pdf');
                   
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="product_report.pdf"',
-        ]);
+        // return response($pdf->output(), 200, [
+        //     'Content-Type' => 'application/pdf',
+        //     'Content-Disposition' => 'attachment; filename="product_report.pdf"',
+        // ]);
     }
 
 

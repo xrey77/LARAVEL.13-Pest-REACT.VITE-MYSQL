@@ -3,15 +3,13 @@ import axios from "axios";
 import jQuery from 'jquery';
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
           'Content-Type': 'application/json',}
 })
 
-const mapi = axios.create({
-  baseURL: "http://localhost:3000/graphql",
-  headers: {'Accept': 'multipart/form-data',
-          'Content-Type': 'multipart/form-data',}
+const mfaApi = axios.create({
+  baseURL: "http://127.0.0.1:8000",
 })
 
 
@@ -29,185 +27,235 @@ export default function Profile() {
     const [showmfa, setShowMfa] = useState<boolean>(false);
     const [showpwd, setShowPwd] = useState<boolean>(false);
     const [showupdate, setShowUpdate] = useState<boolean>(false);
-    // const [qrcodeurl, setQrcodeurl] = useState<Blob>(new Blob());
     const [qrcodeurl, setQrcodeurl] = useState<string>('');
 
-    const fetchUserData = async (id: any, token: any) => {
-        const getuseridQuery = {
-            query: `
-                query GetUserId($id: Float!, $token: String!) {
-                    getUserById(id: $id, token: $token) {
-                        id
-                        firstname
-                        lastname
-                        email
-                        mobile
-                        userpic
-                        qrcodeurl
-                    }
-                }
-            `,
-            variables: { id: Number(id), token: token }
-        };
+    interface User {
+        id: string,
+        firstname: string,
+        lastname: string,
+        email: string,
+        mobile: string,
+        username: string,
+        two_factor_secret: string,
+        two_factor_recovery_codes: string,
+        two_factor_confirmed_at: string,
+        roles: string,
+        profilepic: string,
+        isactivated: string,
+        isblocked: number,
+        mailtoken: number,
+        qrcodeurl: string,
+        secretkey: string   
+    }
 
-        try {
-            const res = await api.post('', getuseridQuery, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                 }
-            });
+    interface Userdata {
+        statuscode: string,
+        message: string,
+        user: User
 
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
-                return;
-            }
+    }
 
-            const userData = res.data.data?.getUserById;
-            
-            if (!userData) {
-                setProfileMsg("User not found");
-                return;
-            }
-
-            // Handle success
-            setFname(userData.firstname);
-            setLname(userData.lastname);
-            setEmail(userData.email);
-            setMobile(userData.mobile);
-            let userpic = `http://localhost:3000/users/${userData.userpic}`;
-            setUserpicture(userpic);            
-            if (userData.qrcodeurl != null) {
-                setQrcodeurl(userData.qrcodeurl);
+    const fetchUserData = (id: any, token: any) => {
+        api.get<Userdata>(`/api/getuserid/${id}`,{headers: {
+            Authorization: `Bearer ${token}`
+        }})
+        .then((res) => {
+            const data: Userdata = res.data;
+            setLname(data.user.lastname); 
+            setFname(data.user.firstname); 
+            setEmail(data.user.email);
+            setMobile(data.user.mobile);
+            if (data.user.qrcodeurl !== null) {
+                setQrcodeurl(data.user.qrcodeurl)
             } else {
-                setQrcodeurl('http://localhost:3000/images/qrcode.png');
+                setQrcodeurl('/images/qrcode.png');
             }
+            let userpic: string = `http://127.0.0.1:8000/users/${res.data.user.profilepic}`;
+            setUserpicture(userpic);
+            },
+        (error: any) => {
+            setProfileMsg(error.response.data.message);
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
+        });
 
-        } catch (error: any) {
-            // Handles network errors or 4xx/5xx status codes
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setProfileMsg(errorMsg);
-            setTimeout(() => setProfileMsg(''), 3000);
-        }
-    };
+    };    
 
     useEffect(() => {
         jQuery("#password").prop('disabled', true);
-
-        const userId = sessionStorage.getItem('USERID');
+        let userId: any = sessionStorage.getItem('USERID');
         if (userId != null) {
             setUserid(userId)
         } else {
             setUserid('')
         }
-        const xtoken = sessionStorage.getItem('TOKEN');
+        let xtoken: any = sessionStorage.getItem('TOKEN');
         if (xtoken !== null) {
             setToken(xtoken);
         } else {
             setToken('');
         }
-        setProfileMsg('please wait..');
-        setTimeout(() => {
-            fetchUserData(userId, xtoken);
-            setProfileMsg('');
-        }, 1000);
+        fetchUserData(userId, xtoken);
     },[]) 
 
-    const submitProfile = async (event: any) => {
-        event.preventDefault();
-        const profileQuery = {
-            query: `
-                mutation UpdateProfile(
-                    $id: Int!, 
-                    $token: String!
-                    $firstname: String!,
-                    $lastname: String!,
-                    $mobile: String!) {
-                    profileUpdate(id: $id, token: $token, firstname: $firstname, lastname: $lastname, mobile: $mobile) {
-                        message
-                        id
-                    }
-                }
-            `,
-            variables: { 
-                id: parseInt(userid), // Ensure it's an integer for GraphQL Int
-                firstname: fname,
-                lastname: lname,
-                mobile: mobile,
-                token: token
-            }
-        };
-
-        try {
-            const res = await api.post('', profileQuery, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                 }
-            });     
-
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
+    const submitProfile = (e: any) => {
+        e.preventDefault();
+        const data =JSON.stringify({ firstname: fname, lastname: lname, mobile: mobile });
+        api.patch(`/api/updateprofile/${userid}`, data, { headers: {
+            Authorization: `Bearer ${token}`
+        }})
+        .then((res: any) => {
+            if (res.data.message != null) {
+                setProfileMsg(res.data.message);
+                setTimeout(() => {
+                    setProfileMsg('');
+                },3000);
                 return;
             }
-
-            const result = res.data.data?.profileUpdate;
-            if (result?.message) {
-                setProfileMsg(result.message);
-                setTimeout(() => setProfileMsg(''), 3000);
-            }
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setProfileMsg(errorMsg);
-            setTimeout(() => setProfileMsg(''), 3000);
-        }
+        }, (error: any) => {
+            setProfileMsg(error.response.data.message);
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
+        });
     }
 
-    const changePicture = async (event: any) => {
+    const changePicture = (event: any) => {
         event.preventDefault();
         const file = event.target.files[0];
         if (!file) return;
-        var pix = URL.createObjectURL(event.target.files[0]);
+
+        var pix = URL.createObjectURL(file);
         jQuery('#userpic').attr('src', pix);
-
-        const operations = JSON.stringify({
-            query: `
-                mutation UploadPicture($id: Int!, $token: String!, $userpic: Upload!) {
-                    profilepicUpload(id: $id, token: $token, userpic: $userpic) {
-                        message
-                        id
-                    }
-                }
-            `,
-            variables: { id: parseInt(userid), token: token, userpic: null }
-        });
-
-        const map = JSON.stringify({ "0": ["variables.userpic"] });
-
-        try {
-            const formData = new FormData();
-            formData.append("operations", operations);
-            formData.append("map", map);
-            formData.append("0", file); 
-
-            const res = await mapi.post('', formData, {
-                headers: {
-                    'apollo-require-preflight': 'true',
-                    'Accept': 'application/json',
-                    Authorization: `Bearer ${token}`
-                 }
-            });
-
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
-            } else {
-                setProfileMsg(res.data.data.profilepicUpload.message);
+        const formData = new FormData();
+        formData.append('profilepic', file);
+        formData.append('_method', 'POST'); 
+        mfaApi.post(`/api/uploadpicture/${userid}`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Accept': 'application/json',
             }
-            setTimeout(() => setProfileMsg(''), 3000);
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setProfileMsg(errorMsg);
-            setTimeout(() => setProfileMsg(''), 3000);
+        })
+        .then((res: any) => {
+            setProfileMsg(res.data.message);
+            setTimeout(() => {
+                let userpic: string = `http://127.0.0.1:8000/${res.data.profilepic}`;
+                window.sessionStorage.setItem('USERPIC', userpic);
+                setProfileMsg('');
+            },3000);
+            return;
+        }, (error: any) => {
+            console.log(error);
+            setProfileMsg(error.response.data.message);
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
+        });     
+    }
+
+    const enableMFA = () => {
+        const jsonData =JSON.stringify({ Twofactorenabled: true });      
+        api.patch(`/api/activatemfa/${userid}`, jsonData, {headers: {
+            Authorization: `Bearer ${token}`
+        }})
+        .then((res: any) => {
+            setProfileMsg(res.data.message);            
+            setTimeout(() => {
+                setQrcodeurl(res.data.qrcodeurl);
+                setProfileMsg('');
+            },6000);
+
+        }, (error: any) => {
+            if (error.response) {
+                setProfileMsg(error.response.data.message);
+            } else {
+                setProfileMsg(error.message);
+            }
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+
+        })
+    }
+
+    const disableMFA = () => {
+        const data =JSON.stringify({ Twofactorenabled: false });      
+        api.patch(`/api/activatemfa/${userid}`, data, {headers: {
+            Authorization: `Bearer ${token}`
+        }})
+        .then((res: any) => {
+            setProfileMsg(res.data.message);
+            setQrcodeurl('/images/qrcode.png');
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+        }, (error: any) => {
+            if (error.response) {
+                setProfileMsg(error.response.data.message);
+            } else {
+                setProfileMsg(error.message);
+            }
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
+        });
+    }
+
+    const changePassword = (event: any) => {
+        event.preventDefault();
+        if (newpassword === '') {
+            setProfileMsg("Please enter new Pasword.");
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
         }
-    };
+        if (confnewpassword === '') {
+            setProfileMsg("Please enter new Pasword confirmation.");
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;            
+        }
+
+        if (newpassword !== confnewpassword) {
+            setProfileMsg("new Password does not matched.");
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;            
+        }
+
+        const data =JSON.stringify({"password": newpassword });
+        api.patch(`/api/changepassword/${userid}`, data, {headers: {
+            Authorization: `Bearer ${token}`
+        }})
+        .then((res: any) => {
+            if (res.data.message != null) {
+                setProfileMsg(res.data.message);
+                setTimeout(() => {
+                    setProfileMsg('');
+                },3000);
+                return;
+            }
+        }, (error: any) => {
+            if (error.response) {
+                setProfileMsg(error.response.data.message);
+            } else {
+                setProfileMsg(error.message);
+            }            
+            setTimeout(() => {
+                setProfileMsg('');
+            },3000);
+            return;
+        });        
+    }
+
 
     const cpwdCheckbox = (e: any) => {
         if (e.target.checked) {
@@ -234,162 +282,6 @@ export default function Profile() {
         } else {
             setShowMfa(false);
             setShowUpdate(false)
-        }
-    }
-
-    const enableMFA = async () => {
-        const mfaQuery = {
-            query: `
-                mutation ActivateMFA(
-                    $id: Int!, 
-                    $token: String!,
-                    $TwoFactorEnabled: Boolean!) {
-                    mfaActivation(id: $id, token: $token, TwoFactorEnabled: $TwoFactorEnabled) {
-                        message
-                        id
-                        qrcodeurl
-                    }
-                }
-            `,
-            variables: { id: parseInt(userid), token: token, TwoFactorEnabled: true}
-        };
-
-        try {
-            const res = await api.post('', mfaQuery, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                 }
-            });
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
-                return;
-            }
-
-            const result = res.data.data?.mfaActivation;
-            console.log(result);
-
-            if (result?.message) {
-                setProfileMsg(result.message);
-                setTimeout(() => {
-                    setProfileMsg('');
-                    setQrcodeurl(result.qrcodeurl);
-                }, 3000);
-            }
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setProfileMsg(errorMsg);
-            setTimeout(() => setProfileMsg(''), 3000);
-        }
-    }
-
-    const disableMFA = async () => {
-        const mfaQuery = {
-            query: `
-                mutation ActivateMFA(
-                    $id: Int!, 
-                    $token: String!,
-                    $TwoFactorEnabled: Boolean!) {
-                    mfaActivation(id: $id, token: $token, TwoFactorEnabled: $TwoFactorEnabled) {
-                        message
-                        id
-                    }
-                }
-            `,
-            variables: { id: parseInt(userid), token: token, TwoFactorEnabled: false}
-        };
-
-        try {
-            const res = await api.post('', mfaQuery, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                 }
-            });
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
-                setQrcodeurl('/images/qrcode.png');
-                setTimeout(() => setProfileMsg(''), 3000);
-                return;
-            }
-
-            const result = res.data.data?.mfaActivation;
-            if (result?.message) {
-                console.log(result.qrcodeurl);
-                setProfileMsg(result.message);
-                setTimeout(() => {
-                    setProfileMsg('');
-                }, 3000);
-            }
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setProfileMsg(errorMsg);
-            setTimeout(() => {
-                setProfileMsg('');
-            }, 3000);
-        }
-    }
-
-    const changePassword = async (event: any) => {
-        event.preventDefault();
-        if (newpassword === '') {
-            setProfileMsg("Please enter new Pasword.");
-            setTimeout(() => {
-                setProfileMsg('');
-            },3000);
-            return;
-        }
-        if (confnewpassword === '') {
-            setProfileMsg("Please enter new Pasword confirmation.");
-            setTimeout(() => {
-                setProfileMsg('');
-            },3000);
-            return;            
-        }
-
-        if (newpassword !== confnewpassword) {
-            setProfileMsg("new Password does not matched.");
-            setTimeout(() => {
-                setProfileMsg('');
-            },3000);
-            return;            
-        }
-
-        const passwordQuery = {
-            query: `
-                mutation ChangePassword($id: Int!, $token: String!, $password: String!) {
-                    updateUserPassword(id: $id, token: $token, password: $password) {
-                        message
-                        id
-                    }
-                }
-            `,
-            variables: { 
-                id: parseInt(userid),
-                token: token,
-                password: newpassword 
-            }
-        };
-
-        try {
-            const res = await api.post('', passwordQuery, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                 }
-            });
-            
-            // Handle GraphQL Errors (e.g., User Not Found)
-            if (res.data.errors) {
-                setProfileMsg(res.data.errors[0].message);
-                return;
-            }
-
-            const result = res.data.data?.updateUserPassword;
-            if (result?.message) {
-                setProfileMsg(result.message);
-                setTimeout(() => setProfileMsg(''), 3000);
-            }
-        } catch (error) {
-            // Handle Network/Server Errors
-            setProfileMsg("An unexpected error occurred.");
         }
     }
 

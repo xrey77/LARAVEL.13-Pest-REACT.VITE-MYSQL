@@ -1,64 +1,63 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import jQuery from "jquery";
 import axios from 'axios';
 
 const api = axios.create({
-   baseURL: "http://localhost:3000/graphql",
+   baseURL: "http://127.0.0.1:8000",
    headers: {'Accept': 'application/json',
              'Content-Type': 'application/json'}
 })
 
 export default function Mfa() {
   const [otp, setOtp] = useState<string>('');
+  const [userid, setUserid] = useState<string>('');
   const [message, setMessage] = useState<string>('');
+  const [token, setToken] = useState<string>('');
+  const [isDisabled, setIsdisabled] = useState<boolean>(false);
 
-  const submitMfa = async (event: any) => {
+  useEffect(() => {
+    const uid = sessionStorage.getItem('USERID');
+    if (uid !== null) {
+      setUserid(uid);
+    }
+    const tokenz = sessionStorage.getItem('TOKEN');
+    if (tokenz !== null) {
+      setToken(tokenz);
+    }
+
+  },[]);
+
+  const submitMfa = (event: React.ChangeEvent) => {
     event.preventDefault();
-
-    const userid = sessionStorage.getItem('USERID') || '';
-    // const token = sessionStorage.getItem('TOKEN');
-    setMessage('please wait..');
-        const otpQuery = {
-            query: `
-                mutation VerifyMFA(
-                    $id: Int!, 
-                    $otp: String!) {
-                    mfaVerification(id: $id, otp: $otp) {
-                        message
-                        id
-                        username
-                    }
-                }
-            `,
-            variables: { id: parseInt(userid), otp: otp}
-        };
-
-        try {
-            const res = await api.post('', otpQuery);
-            if (res.data.errors) {
-                setMessage(res.data.errors[0].message);
-                setTimeout(() => {
-                    setMessage('');
-                }, 3000);
-                return;
+    setMessage('please wait..');      
+    setIsdisabled(true);
+    const jsonData = JSON.stringify({ otp: otp });
+    api.patch(`/api/verifytotp/${userid}`, jsonData, { headers: {
+      Authorization: `Bearer ${token}`
+    }})
+    .then((res) => {
+            setMessage(res.data.message);
+            sessionStorage.setItem("USERNAME", res.data.username);
+            setTimeout(() => {
+              setMessage('');
+              setOtp('');
+              setIsdisabled(false);
+              jQuery("#mfaReset").trigger('click');              
+              window.location.reload();
+            }, 3000);
+      }, (error: any) => {
+            if (error.response) {
+              setMessage(error.response.data.message);
+            } else {
+              setMessage(error.message);
             }
-
-            const result = res.data.data?.mfaVerification;
-            if (result?.message) {
-                setMessage(result.message);
-                sessionStorage.setItem("USERNAME", result.username);                
-                setTimeout(() => {
-                    setMessage('');
-                    jQuery("#reset").trigger('click');
-                    jQuery("#mfaclose").trigger('click');
-                    location.reload();
-                }, 3000);
-            }
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.errors?.[0]?.message || error.message;
-            setMessage(errorMsg);
-            setTimeout(() => setMessage(''), 3000);
-        }
+            setTimeout(() => {
+              setMessage('');
+              setIsdisabled(false);
+              setOtp('');
+            }, 3000);
+            return;
+    });              
   }
 
   const closeMfa = (event: any) => {
@@ -85,10 +84,10 @@ export default function Mfa() {
           <div className="modal-body">
           <form onSubmit={submitMfa} autoComplete="off">
             <div className="mb-3">
-              <input type="text" required value={otp} onChange={e => setOtp(e.target.value)} className="form-control border-dark" id="otp" placeholder="enter 6-digin OTP code"/>
+              <input type="text" required value={otp} onChange={e => setOtp(e.target.value)} className="form-control border-dark" id="otp" placeholder="enter 6-digin OTP code" disabled={isDisabled}/>
             </div>          
             <div className="mb-3">
-              <button type="submit" className="btn btn-info mx-2 text-dark">submit</button>
+              <button type="submit" className="btn btn-info mx-2 text-dark" disabled={isDisabled}>submit</button>
               <button type="reset" className="btn btn-info text-dark">reset</button>
             </div>
           </form>            

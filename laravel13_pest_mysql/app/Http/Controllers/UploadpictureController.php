@@ -7,13 +7,13 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Exception;
-use Image;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Services\KafkaProducerService;
 use OpenApi\Attributes as OA;
 
 class UploadpictureController extends Controller
 {
-    #[OA\Patch(
+    #[OA\Post(
         path: '/api/uploadpicture/{id}',
         tags: ['Users'],                
         summary: 'Update profile picture'
@@ -33,29 +33,26 @@ class UploadpictureController extends Controller
     )]
     #[OA\Response(response: 200, description: 'Picture uploaded')]
     #[OA\Response(response: 404, description: 'User or Image not found')]
-    public function updateProfilepicture(Request $request, KafkaProducerService $kafkaService) 
+    public function updateProfilepicture(Request $request, KafkaProducerService $kafkaService, ?int $id) 
     {
-        $userid = $request->id;
-        $user = User::find($userid);
+        $user = User::find($id);
         if (!$user) {
             return response()->json(['message' => 'User not found...'],404);
         }
-        // GET MULTIPART FORM FILE
+
+
         if ($request->hasFile('profilepic')) {
             $file = $request->file('profilepic');
+
             $img = $file->getClientOriginalName();
-            // ASSIGN NEW FILENAME
             $ext = $request->file('profilepic')->guessExtension(); 
-            $newfile = '00' . $userid . '.' . $ext;
-            $img = Image::read($file->getRealPath());
-            $img->resize(100, 100, function ($constraint) {
-                $constraint->aspectRatio();
-            })->save(public_path('users/' . $newfile));
+            $newfile = '00' . $id . '.' . $ext;
+            $img = Image::decode($file);
+            $img->resize(100, 100);
         
-            // Store the original image
             $file->move(public_path('users'), $newfile);
             
-            $user = User::find($userid);
+            $user = User::find($id);
             if($user) {
                 $user->profilepic = "users/" . $newfile;
                 $user->save();
@@ -72,6 +69,5 @@ class UploadpictureController extends Controller
         } else {
             return response()->json(['message' => 'Image not found.'],404);
         }
-
     }    
 }

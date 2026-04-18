@@ -12,7 +12,7 @@ use OpenApi\Attributes as OA;
 class UpdateprofileController extends Controller
 {
     #[OA\Patch(
-        path: '/api/profileupdate/{id}',
+        path: '/api/updateprofile/{id}',
         tags: ['Users'],
         summary: 'Update user details',
         security: [['sanctum' => []]]
@@ -31,7 +31,7 @@ class UpdateprofileController extends Controller
     #[OA\Response(response: 200, description: 'Profile updated successfully')]
     #[OA\Response(response: 401, description: 'Un-Authorized Access')]
     #[OA\Response(response: 404, description: 'User not found')]
-    public function updateUser(string $id, Request $request, KafkaProducerService $kafkaService) {
+    public function updateUser(Request $request, KafkaProducerService $kafkaService, int $id) {
         if (Auth::guard('sanctum')->check()) {
             $user = User::find($id);
             if (!$user) {

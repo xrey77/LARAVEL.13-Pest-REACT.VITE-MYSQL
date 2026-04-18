@@ -117,7 +117,7 @@ class RegisterController extends Controller
         $kafkaService->publishMessage('central-topic', $data, $user);
 
         return response()->json([
-            'message' => 'User registered successfully.'],201);
+            'message' => 'You have registered successfully please login now.'],201);
     }
 
 

@@ -2,11 +2,26 @@ import axios from 'axios';
 import { useState, useEffect } from 'react';
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json'}
 })
 
+interface Productdata {
+  totalrecords: number,
+  totpage: number,
+  page: number,
+  products: Products[]
+}
+
+interface Products {
+  id: number,
+  descriptions: string  
+  qty: number,
+  unit: string,
+  sellprice: number,
+  productpicture: string
+}
 
 export default function Prodlist() {
 
@@ -23,43 +38,24 @@ export default function Prodlist() {
     const [totalrecs, setTotalrecs] = useState<number>(0);
     const [message, setMessage] = useState<string>('');
 
-    let [products, setProducts] = useState<[]>([]);
+    const [products, setProducts] = useState<Products[]>([]);
+
 
     const fetchProducts = async (pg: number) => {
-        const productsQuery = {
-            query: `
-                query ListProducts($page: Int!) {
-                    getAllproducts(page: $page) {
-                        products {
-                            id
-                            category
-                            descriptions
-                            qty
-                            unit
-                            sellprice
-                            productpicture
-                        }
-                        page
-                        totpage
-                        totalrecords
-                    }
-                }
-            `,
-            variables: { page: pg }
-        };
-
-        try {
-            const res = await api.post('', productsQuery);
-            const result = res.data.data?.getAllproducts; 
-            
-            if (result) {
-                setProducts(result.products);
-                setTotalrecs(result.totalrecords);
-                setTotpage(result.totpage);
-            }
-        } catch (error: any) {
-            setMessage(error.message);
+      await api.get<Productdata>(`/api/productlist/${pg}`)
+      .then((res: any) => {
+        const data: Productdata = res.data;
+        setProducts(data.products);
+        setTotpage(data.totpage);
+        setTotalrecs(data.totalrecords)
+        setPage(data.page);
+      }, (error: any) => {
+        if (error.response) {
+          setMessage(error.response.data.message)
+        } else {
+          setMessage(error.message);
         }
+      });      
     };
 
 
@@ -95,7 +91,7 @@ export default function Prodlist() {
   return (
     <div className="container">
             <h1 className='text-warning embossed mt-3'>Products List</h1>
-            <div>{message}</div>
+            <div className='text-white'>{message}</div>
             <table className="table table-info table-striped table-hover">
             <thead>
                 <tr>

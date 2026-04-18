@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/graphql",
+  baseURL: "http://127.0.0.1:8000",
   headers: {'Accept': 'application/json',
             'Content-Type': 'application/json',
           }
@@ -17,59 +17,27 @@ export default function Register() {
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<string>('');
 
-  const submitRegistration = async (event: any) => {
+  const submitRegistration = (event: any) => {
     event.preventDefault();
-    setMessage('please wait...');
-
-  const signupQuery = {
-      query: `
-          mutation UserRegistration(
-            $firstname: String!, 
-            $lastname: String!, 
-            $email: String!,
-            $mobile: String!, 
-            $username: String!, 
-            $password: String!
-          ) {
-            createUser(
-              firstname: $firstname, 
-              lastname: $lastname,
-              email: $email, 
-              mobile: $mobile,
-              username: $username, 
-              password: $password
-            ) {
-              message  # You MUST request the message field here
+    const data =JSON.stringify({ lastname: lastname, firstname: firstname,email: email, mobile: mobile,
+      username: username, password: password });
+    api.post("/api/register", data)
+    .then((res: any) => {
+          setMessage(res.data.message);
+          window.setTimeout(() => {
+            setMessage('');
+          }, 3000);
+      }, (error: any) => {
+            if (error.response) {
+              setMessage(error.response.data.message);
+            } else {
+              setMessage(error.message);
             }
-          }
-        `,
-        variables: { firstname, lastname, email, mobile, username, password }
-      };  
-
-      try {
-
-        const res = await api.post('', signupQuery);    
-        if (res.data.errors) {
-          setMessage(res.data.errors[0].message);
-            setTimeout(() => {
-                setMessage('');
-            }, 3000);      
-        }
-
-        const result = res.data.data?.createUser;    
-        if (result?.message) {
-          setMessage(result.message);
-          setTimeout(() => {
+            window.setTimeout(() => {
               setMessage('');
-          }, 3000);      
-        }
-        
-      } catch (error: any) {
-        setMessage(error.message || "An error occurred");
-          setTimeout(() => {
-              setMessage('');
-          }, 3000);      
-      }
+            }, 3000);
+    });
+    jQuery("#registerReset").trigger('click');
   }
 
   const CloseRegistration = (event: any) => {
