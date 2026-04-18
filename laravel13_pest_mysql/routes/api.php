@@ -15,6 +15,7 @@ use App\Http\Controllers\UpdateprofileController;
 use App\Http\Controllers\AddproductController;
 use App\Http\Controllers\ProductlistController;
 use App\Http\Controllers\ProductsearchController;
+use App\Http\Controllers\ProductbycategoryController;
 
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\PdfController;
@@ -38,6 +39,7 @@ Route::delete('/deleteuser/{id}', [DeleteuserController::class, 'deleteUser']);
 Route::post('/addproduct', [AddproductController::class, 'addProduct']);
 Route::get('/productlist/{page}', [ProductlistController::class, 'listProducts']);
 Route::get('/productsearch/{page}/{key}', [ProductsearchController::class, 'productSearch']);
+Route::get('/productbycategory', [ProductbycategoryController::class, 'generateCategoryReport']);
 
 Route::get('/chartdata', [ChartController::class, 'generateChart']);
 Route::get('/pdfreport', [PdfController::class, 'generatePdf']);

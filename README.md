@@ -13,8 +13,9 @@ Vite 8.0.0 + React 19.2.5 and MySQL Backend Starter Project</h3>
     <p>4. Users' Profile, Change Password, Disable/Enable MFA and Upload User Profile Picture </p>
     <p>5. Products List, Catalogs Custom Pagination and Product Search </p>
     <p>6. Product PDF Report</p>
-    <p>7. Sales Graph</p>
-    <p>8. Swagger OpenAPI Documentation, http://127.0.0.1:8000/api/documentation
+    <p>7. Product by Category Report - Master/Details</p>
+    <p>8. Sales Graph</p>
+    <p>9. Swagger OpenAPI Documentation, http://127.0.0.1:8000/api/documentation
 </p>
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>

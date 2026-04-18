@@ -65,7 +65,11 @@ export default function Header() {
           <ul className="dropdown-menu">
             <li><Link className="dropdown-item" to="/productreport">Products Report - PDF</Link></li>
             <li><Link className="dropdown-item" to="/saleschart">Annual Sales Chart</Link></li>
+            <li><hr className="dropdown-divider"/></li>
+            <li><Link className="dropdown-item" to="/productbycategoryreport">Product by Category Report - Master/Details</Link></li>
           </ul>
+
+          
         </li>
 
 
@@ -136,7 +140,10 @@ export default function Header() {
               <Link className="dropdown-item" to="/productreport">Product Reports - PDF</Link></li>
             <li data-bs-dismiss="offcanvas">
               <Link className="dropdown-item" to="/saleschart">Annual Sales Chart</Link></li>
+            <li><hr className="dropdown-divider"/></li>
+            <li><Link className="dropdown-item" to="/productbycategoryreport">Product by Category Report</Link></li>
           </ul>
+
         </li>
 
 
